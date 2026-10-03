@@ -1,4 +1,5 @@
 import { FORMAT_OPTIONS } from "../../constants/formats";
+import type { useEditorState } from "../../hooks/useEditorState";
 import Accordion from "../ui/Accordion";
 import ColorSelect from "../ui/ColorSelect";
 import Input from "../ui/Input";
@@ -7,33 +8,24 @@ import Select from "../ui/Select";
 import Slider from "../ui/Slider";
 import Upload from "../ui/Upload"
 
+type EditorStatesType = ReturnType<typeof useEditorState>;
+
 interface SideBarProps {
   uploadedFile: File | null;
   setUploadedFile: (file: File | null) => void;
-  format: string;
-  setFormat: (format: string) => void;
-  bgColor: string;
-  setBgColor: (color: string) => void;
   charSets: Record<string, string>;
-  asciiSettings: {
-    scale: number;
-    spacing: number;
-    charSet: string;
-    customChar: string;
-  };
-  setAsciiSettings: React.Dispatch<React.SetStateAction<any>>;
-  adjustments: {
-    brightness: number;
-    contrast: number;
-    saturation: number;
-    hueRotation: number;
-    gamma: number;
-  };
-  setAdjustments: React.Dispatch<React.SetStateAction<any>>;
+  editor: EditorStatesType;
 }
 
-const SideBar = ({ uploadedFile, setUploadedFile, charSets, format, setFormat, bgColor, setBgColor, asciiSettings, setAsciiSettings, adjustments, setAdjustments }: SideBarProps) => {
+const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor }: SideBarProps) => {
   const charSetList = [...Object.keys(charSets), "CUSTOM"];
+  const { 
+    format, setFormat, 
+    bgColor, setBgColor, 
+    asciiSettings, setAsciiSettings, 
+    adjustments, setAdjustments 
+  } = editor;
+  
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-85 text-text-grey flex flex-col border-r border-border bg-bg-light">

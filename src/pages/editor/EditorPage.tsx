@@ -8,10 +8,15 @@ import { CHARSETS } from "../../constants/charsets";
 const EditorPage = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const editorStates = useEditorState();
-  
+
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      <SideBar uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} charSets={CHARSETS} {...editorStates}/>
+      <SideBar
+        uploadedFile={uploadedFile}
+        setUploadedFile={setUploadedFile}
+        charSets={CHARSETS}
+        editor={editorStates}
+      />
       <Preview />
     </div>
   )
