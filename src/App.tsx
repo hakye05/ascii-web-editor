@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 
 import EditorPage from './pages/editor/EditorPage'
@@ -10,11 +10,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path='' element={<EditorPage />} />
-
+        <Route path='/' element={<EditorPage />} />
         <Route path='/about' element={<AboutPage />} />
-
         <Route path='/changelog' element={<ChangelogPage />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
