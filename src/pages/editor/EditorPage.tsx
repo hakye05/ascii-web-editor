@@ -1,6 +1,6 @@
 import { useState } from "react"
 import SideBar from "../../components/layout/SideBar"
-import Preview from "../../components/Preview"
+import { Preview } from "../../components/Preview";
 
 import { useEditorState } from "../../hooks/useEditorState";
 import { CHARSETS } from "../../constants/charsets";
@@ -17,7 +17,11 @@ const EditorPage = () => {
         charSets={CHARSETS}
         editor={editorStates}
       />
-      <Preview />
+      <Preview
+        file={uploadedFile}
+        charSets={CHARSETS}
+        editor={editorStates}
+      />
     </div>
   )
 }

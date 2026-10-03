@@ -19,13 +19,13 @@ interface SideBarProps {
 
 const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor }: SideBarProps) => {
   const charSetList = [...Object.keys(charSets), "CUSTOM"];
-  const { 
-    format, setFormat, 
-    bgColor, setBgColor, 
-    asciiSettings, setAsciiSettings, 
-    adjustments, setAdjustments 
+  const {
+    format, setFormat,
+    bgColor, setBgColor,
+    asciiSettings, setAsciiSettings,
+    adjustments, setAdjustments
   } = editor;
-  
+
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-85 text-text-grey flex flex-col border-r border-border bg-bg-light">
@@ -42,17 +42,19 @@ const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor }: SideBarPro
           <Slider
             label="Scale"
             value={asciiSettings.scale}
-            min={1}
-            max={20}
-            defaultValue={4}
+            min={0.1}
+            max={4}
+            defaultValue={2}
+            step={0.1}
+            decimals={1}
             onChange={(val) => setAsciiSettings({ ...asciiSettings, scale: val })}
           />
           <Slider
             label="Spacing"
             value={asciiSettings.spacing}
             min={-2}
-            max={2}
-            defaultValue={0}
+            max={1}
+            defaultValue={-2}
             step={0.1}
             decimals={1}
             onChange={(val) => setAsciiSettings({ ...asciiSettings, spacing: val })}

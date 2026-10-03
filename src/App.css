@@ -11,7 +11,7 @@
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #27272a #121214;
-  scrollbar-gutter: stable;
+  /* scrollbar-gutter: stable; */
 }
 
 .custom-scrollbar::-webkit-scrollbar {
