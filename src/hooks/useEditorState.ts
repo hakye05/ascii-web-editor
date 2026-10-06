@@ -5,8 +5,8 @@ export const useEditorState = () => {
   const [bgColor, setBgColor] = useState("#0A0A0A");
 
   const [asciiSettings, setAsciiSettings] = useState({
-    scale: 2,
-    spacing: -2,
+    scale: 1,
+    spacing: 0,
     charSet: "STANDARD",
     customChar: " .:-=+*#%@"
   });

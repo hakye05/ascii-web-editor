@@ -1,12 +1,13 @@
-import { FORMAT_OPTIONS } from "../../constants/formats";
-import type { useEditorState } from "../../hooks/useEditorState";
-import Accordion from "../ui/Accordion";
-import ColorSelect from "../ui/ColorSelect";
-import Input from "../ui/Input";
-import ItemSelect from "../ui/ItemSelect";
-import Select from "../ui/Select";
-import Slider from "../ui/Slider";
-import Upload from "../ui/Upload"
+import { FORMAT_OPTIONS } from "../constants/formats";
+import type { useEditorState } from "../hooks/useEditorState";
+import Accordion from "./ui/Accordion";
+import ColorSelect from "./ui/ColorSelect";
+import Input from "./ui/Input";
+import ItemSelect from "./ui/ItemSelect";
+import Select from "./ui/Select";
+import Slider from "./ui/Slider";
+import Upload from "./ui/Upload";
+
 
 type EditorStatesType = ReturnType<typeof useEditorState>;
 
@@ -28,7 +29,7 @@ const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor }: SideBarPro
 
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-85 text-text-grey flex flex-col border-r border-border bg-bg-light">
+    <aside className="h-full w-85 text-text-grey flex flex-col border-r border-border bg-bg-light shrink-0">
       <div className="h-11 border-b border-border flex items-center px-4 text-text-light">
         <h1 className="text-l">ASCII</h1>
       </div>
@@ -43,22 +44,22 @@ const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor }: SideBarPro
             label="Scale"
             value={asciiSettings.scale}
             min={0.1}
-            max={4}
-            defaultValue={2}
+            max={2}
+            defaultValue={1}
             step={0.1}
             decimals={1}
             onChange={(val) => setAsciiSettings({ ...asciiSettings, scale: val })}
           />
-          <Slider
+          {/* <Slider
             label="Spacing"
             value={asciiSettings.spacing}
-            min={-2}
-            max={1}
-            defaultValue={-2}
+            min={-10}
+            max={10}
+            defaultValue={0}
             step={0.1}
             decimals={1}
             onChange={(val) => setAsciiSettings({ ...asciiSettings, spacing: val })}
-          />
+          /> */}
           <Select
             label="Character Set"
             value={asciiSettings.charSet}

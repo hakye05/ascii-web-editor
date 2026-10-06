@@ -1,5 +1,5 @@
 import { useState } from "react"
-import SideBar from "../../components/layout/SideBar"
+import SideBar from "../../components/SideBar"
 import { Preview } from "../../components/Preview";
 
 import { useEditorState } from "../../hooks/useEditorState";
