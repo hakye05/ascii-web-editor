@@ -3,7 +3,6 @@ import './App.css'
 
 import EditorPage from './pages/editor/EditorPage'
 import AboutPage from './pages/about/AboutPage'
-import ChangelogPage from './pages/changelog/ChangelogPage'
 
 function App() {
 
@@ -12,7 +11,6 @@ function App() {
       <Routes>
         <Route path='/' element={<EditorPage />} />
         <Route path='/about' element={<AboutPage />} />
-        <Route path='/changelog' element={<ChangelogPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
