@@ -19,12 +19,13 @@ const ItemSelect = ({ label, value, options, onChange }: ItemSelectProps) => {
                     const optValue = typeof opt === "string" ? opt : opt.label;
                     const optSubtitle = typeof opt === "object" ? opt.subtitle : undefined;
 
-                    const isSelected = value.toUpperCase() === optValue.toUpperCase();
+                    const targetValue = (optSubtitle ? optSubtitle.replace(/^\./, "") : optValue).toLowerCase();
+                    const isSelected = value.toLowerCase() === targetValue;
 
                     return (
                         <button
                             key={optValue}
-                            onClick={() => onChange(optValue.toLowerCase())}
+                            onClick={() => onChange(targetValue.toLowerCase())}
                             className={`px-3 py-2 border transition-colors flex flex-col items-start justify-center cursor-pointer ${isSelected
                                 ? "bg-zinc-900 border-zinc-500 text-text-light"
                                 : "border-border text-text-grey hover:border-zinc-700"

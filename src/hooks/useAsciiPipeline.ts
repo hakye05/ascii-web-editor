@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AsciiPipelineManager } from "../utils/asciiPipelineManager";
+import { AsciiPipelineManager, exportImage } from "../utils/asciiPipelineManager";
 import { useEditorState } from "../hooks/useEditorState";
 
 interface UseAsciiPipelineProps {
@@ -98,5 +98,38 @@ export function useAsciiPipeline({ file, charSets, editor }: UseAsciiPipelinePro
         };
     }, []);
 
-    return { canvasRef, isReady };
+    // Export Handler Method
+    const handleExport = async () => {
+        if (!canvasRef.current || !managerRef.current) return;
+
+        const format = editor.format.replace(/^\./, "").toLowerCase();
+
+        if (format === "png" || format === "jpg") {
+            // Render a fresh frame and capture blob
+            scheduleRender();
+            requestAnimationFrame(async () => {
+                if (canvasRef.current) {
+                    await exportImage(canvasRef.current, format);
+                }
+            });
+        } else if (format === "txt") {
+            const activeCharSet =
+                editor.asciiSettings.charSet === "CUSTOM"
+                    ? editor.asciiSettings.customChar
+                    : charSets[editor.asciiSettings.charSet] || charSets.STANDARD;
+
+            const textData = await managerRef.current.exportAsText(activeCharSet);
+            if (!textData) return;
+
+            const blob = new Blob([textData], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.download = "ascii-art.txt";
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+    };
+
+    return { canvasRef, isReady, handleExport };
 }

@@ -1,6 +1,7 @@
 import { FORMAT_OPTIONS } from "../constants/formats";
 import type { useEditorState } from "../hooks/useEditorState";
 import Accordion from "./ui/Accordion";
+import ButtonFull from "./ui/ButtonFull";
 import ColorSelect from "./ui/ColorSelect";
 import Input from "./ui/Input";
 import ItemSelect from "./ui/ItemSelect";
@@ -16,9 +17,10 @@ interface SideBarProps {
   setUploadedFile: (file: File | null) => void;
   charSets: Record<string, string>;
   editor: EditorStatesType;
+  onExport: () => void;
 }
 
-const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor }: SideBarProps) => {
+const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor, onExport }: SideBarProps) => {
   const charSetList = [...Object.keys(charSets), "CUSTOM"];
   const {
     format, setFormat,
@@ -134,6 +136,9 @@ const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor }: SideBarPro
             options={FORMAT_OPTIONS}
             onChange={setFormat}
           />
+          <ButtonFull onClick={onExport} disabled={!uploadedFile}>
+            Export {format.toUpperCase()}
+          </ButtonFull>
         </Accordion>
       </div>
     </aside>

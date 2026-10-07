@@ -1,17 +1,12 @@
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { ZoomControls } from "./ui/ZoomControl";
-
-import { useEditorState } from "../hooks/useEditorState";
-import { useAsciiPipeline } from "../hooks/useAsciiPipeline";
 
 interface PreviewProps {
   file: File | null;
-  charSets: Record<string, string>;
-  editor: ReturnType<typeof useEditorState>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
-export const Preview = ({ file, charSets, editor }: PreviewProps) => {
-  const { canvasRef } = useAsciiPipeline({ file, charSets, editor });
+export const Preview = ({ file, canvasRef }: PreviewProps) => {
 
   const [zoom, setZoom] = useState<number>(100);
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 25, 500));

@@ -28,6 +28,12 @@ export class AsciiPipelineManager {
     private sourceWidth = 0;
     private sourceHeight = 0;
 
+    // --- Export State Cache ---
+    private lastCellBuffer: GPUBuffer | null = null;
+    private lastCols = 0;
+    private lastRows = 0;
+    private lastCharSetString = "";
+
     /**
      * Initializes the WebGPU device context, configures target canvas format,
      * and compiles both compute and render pipelines.
@@ -139,6 +145,11 @@ export class AsciiPipelineManager {
         const totalCells = cols * rows;
         if (totalCells <= 0) return;
 
+        // Cache grid dimensions and characters for TXT export
+        this.lastCols = cols;
+        this.lastRows = rows;
+        this.lastCharSetString = charSetString;
+
         const asciiPixelWidth = cols * fontAtlas.cellWidth;
         const asciiPixelHeight = rows * fontAtlas.cellHeight;
 
@@ -164,11 +175,18 @@ export class AsciiPipelineManager {
 
         const sampler = device.createSampler({ magFilter: "nearest", minFilter: "nearest" });
 
+        // Clean up last cell buffer
+        if (this.lastCellBuffer) {
+            this.lastCellBuffer.destroy();
+            this.lastCellBuffer = null;
+        }
+
         // Storage buffer shared between Compute and Render passes
         const cellStorageBuffer = device.createBuffer({
             size: totalCells * 16,
-            usage: GPUBufferUsage.STORAGE,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
         });
+        this.lastCellBuffer = cellStorageBuffer;
 
         // Grid Dimensions & Atlas Metadata
         const computeParams = new Uint32Array([cols, rows, fontAtlas.charLuminances.length, 0]);
@@ -269,5 +287,79 @@ export class AsciiPipelineManager {
         renderPass.end();
 
         device.queue.submit([commandEncoder.finish()]);
+
+        // Clean up frame allocations to prevent VRAM memory leaks
+        atlasTexture.destroy();
+        computeBuffer.destroy();
+        lumBuffer.destroy();
+        adjBuffer.destroy();
+        renderBuffer.destroy();
     }
+
+    /**
+     * Reads back grid cell data from the last rendered frame to construct a plain text string.
+     */
+    async exportAsText(overrideCharSet?: string): Promise<string | null> {
+        if (!this.device || !this.lastCellBuffer || this.lastCols === 0 || this.lastRows === 0) {
+            return null;
+        }
+
+        const charSetString = overrideCharSet || this.lastCharSetString;
+        const totalCells = this.lastCols * this.lastRows;
+        const bufferSize = totalCells * 16;
+
+        const stagingBuffer = this.device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+
+        const commandEncoder = this.device.createCommandEncoder();
+        commandEncoder.copyBufferToBuffer(this.lastCellBuffer, 0, stagingBuffer, 0, bufferSize);
+        this.device.queue.submit([commandEncoder.finish()]);
+
+        await stagingBuffer.mapAsync(GPUMapMode.READ);
+        const arrayBuffer = stagingBuffer.getMappedRange();
+        const uint32Array = new Uint32Array(arrayBuffer);
+
+        const uniqueChars = Array.from(new Set(charSetString.split("")));
+        let asciiStr = "";
+
+        for (let r = 0; r < this.lastRows; r++) {
+            for (let c = 0; c < this.lastCols; c++) {
+                const idx = r * this.lastCols + c;
+                const charIndex = uint32Array[idx * 4];
+                const char = uniqueChars[charIndex] || " ";
+                asciiStr += char;
+            }
+            asciiStr += "\n";
+        }
+
+        stagingBuffer.unmap();
+        stagingBuffer.destroy();
+
+        return asciiStr;
+    }
+}
+
+/**
+ * Downloads the current WebGPU canvas state as an image file (PNG / JPG)
+ */
+export async function exportImage(
+    canvas: HTMLCanvasElement,
+    format: "png" | "jpg"
+): Promise<void> {
+    const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
+
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.download = `ascii-art.${format}`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+            resolve();
+        }, mimeType, 0.95);
+    });
 }

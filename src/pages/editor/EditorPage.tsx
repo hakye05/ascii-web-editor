@@ -4,10 +4,17 @@ import { Preview } from "../../components/Preview";
 
 import { useEditorState } from "../../hooks/useEditorState";
 import { CHARSETS } from "../../constants/charsets";
+import { useAsciiPipeline } from "../../hooks/useAsciiPipeline";
 
 const EditorPage = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const editorStates = useEditorState();
+
+  const { canvasRef, handleExport } = useAsciiPipeline({
+    file: uploadedFile,
+    charSets: CHARSETS,
+    editor: editorStates,
+  });
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
@@ -16,11 +23,11 @@ const EditorPage = () => {
         setUploadedFile={setUploadedFile}
         charSets={CHARSETS}
         editor={editorStates}
+        onExport={handleExport}
       />
       <Preview
         file={uploadedFile}
-        charSets={CHARSETS}
-        editor={editorStates}
+        canvasRef={canvasRef}
       />
     </div>
   )
