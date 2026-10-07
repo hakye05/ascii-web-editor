@@ -9,6 +9,8 @@ import Select from "./ui/Select";
 import Slider from "./ui/Slider";
 import Upload from "./ui/Upload";
 
+import { Link } from "react-router-dom";
+
 
 type EditorStatesType = ReturnType<typeof useEditorState>;
 
@@ -140,6 +142,17 @@ const SideBar = ({ uploadedFile, setUploadedFile, charSets, editor, onExport }: 
             Export {format.toUpperCase()}
           </ButtonFull>
         </Accordion>
+      </div>
+
+      {/* Footer Section */}
+      <div className="pt-2 pb-2 px-4 text-xs text-text-grey border-t border-border flex items-center justify-start">
+        <Link to="/about" className="px-2 hover:text-text-light transition-colors py-1 flex items-center gap-1">
+          <span>About</span>
+        </Link>
+
+        <a href="https://github.com/hakye05" target="_blank" rel="noreferrer" className="px-2 hover:text-text-light transition-colors py-1 flex items-center gap-1">
+          <span>GitHub</span>
+        </a>
       </div>
     </aside>
   )
