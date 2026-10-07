@@ -385,6 +385,26 @@ export class AsciiPipelineManager {
 
         return asciiStr;
     }
+
+    /**
+     * Cleans up all persistent GPU textures, buffers, and samplers.
+     */
+    destroy(): void {
+        if (this.sourceTexture) {
+            this.sourceTexture.destroy();
+            this.sourceTexture = null;
+        }
+        if (this.cachedAtlasTexture) {
+            this.cachedAtlasTexture.destroy();
+            this.cachedAtlasTexture = null;
+        }
+        if (this.lastCellBuffer) {
+            this.lastCellBuffer.destroy();
+            this.lastCellBuffer = null;
+        }
+        this.cachedFontAtlas = null;
+        this.cachedFontKey = "";
+    }
 }
 
 /**

@@ -95,6 +95,7 @@ export function useAsciiPipeline({ file, charSets, editor }: UseAsciiPipelinePro
             if (animFrameId.current !== null) {
                 cancelAnimationFrame(animFrameId.current);
             }
+            managerRef.current?.destroy();
         };
     }, []);
 
