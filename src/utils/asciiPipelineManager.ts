@@ -1,4 +1,4 @@
-import { createFontAtlas } from "./fontAtlas";
+import { createFontAtlas, type FontAtlasData } from "./fontAtlas";
 import { asciiShaderWGSL } from "../shaders/asciiWGSL";
 import { asciiRenderWGSL } from "../shaders/asciiRenderWGSL";
 
@@ -23,10 +23,18 @@ export class AsciiPipelineManager {
     private renderPipeline: GPURenderPipeline | null = null;
     private canvasFormat: GPUTextureFormat = "bgra8unorm";
 
+    // --- Reusable GPU Sampler ---
+    private sampler: GPUSampler | null = null;
+
     // --- Texture Cache ---
     private sourceTexture: GPUTexture | null = null;
     private sourceWidth = 0;
     private sourceHeight = 0;
+
+    /// --- Font Atlas Cache ---
+    private cachedFontAtlas: FontAtlasData | null = null;
+    private cachedAtlasTexture: GPUTexture | null = null;
+    private cachedFontKey = ""; // Combined key: `${fontFamily}::${fontSize}::${charSetString}`
 
     // --- Export State Cache ---
     private lastCellBuffer: GPUBuffer | null = null;
@@ -53,6 +61,12 @@ export class AsciiPipelineManager {
             device: this.device,
             format: this.canvasFormat,
             alphaMode: "premultiplied",
+        });
+
+        // Initialize sampler once
+        this.sampler = this.device.createSampler({
+            magFilter: "nearest",
+            minFilter: "nearest",
         });
 
         const computeModule = this.device.createShaderModule({ code: asciiShaderWGSL });
@@ -111,27 +125,74 @@ export class AsciiPipelineManager {
     }
 
     /**
+     * Helper to retrieve or regenerate the font atlas and GPU texture.
+     * Recreates the atlas only when the character set string, font family, or font size changes.
+     */
+    private updateFontAtlas(
+        charSetString: string,
+        fontFamily: string = "monospace",
+        fontSize: number = 32
+    ): FontAtlasData {
+        if (!this.device) throw new Error("Device not initialized.");
+
+        const cacheKey = `${fontFamily}::${fontSize}::${charSetString}`;
+
+        if (this.cachedFontAtlas && this.cachedAtlasTexture && this.cachedFontKey === cacheKey) {
+            return this.cachedFontAtlas;
+        }
+
+        if (this.cachedAtlasTexture) {
+            this.cachedAtlasTexture.destroy();
+            this.cachedAtlasTexture = null;
+        }
+
+        const fontAtlas = createFontAtlas(charSetString, fontFamily, fontSize);
+
+        const atlasTexture = this.device.createTexture({
+            size: [fontAtlas.textureWidth, fontAtlas.textureHeight, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+
+        this.device.queue.copyExternalImageToTexture(
+            { source: fontAtlas.canvas },
+            { texture: atlasTexture },
+            [fontAtlas.textureWidth, fontAtlas.textureHeight]
+        );
+
+        this.cachedFontAtlas = fontAtlas;
+        this.cachedAtlasTexture = atlasTexture;
+        this.cachedFontKey = cacheKey;
+
+        return fontAtlas;
+    }
+
+    /**
      * Executes compute and render passes to draw the final ASCII grid frame.
      * 
      * @param charSetString Characters to build the font atlas from
      * @param scale Resolution scaling multiplier
      * @param bgColor Background color hex string (e.g. "#000000")
      * @param adjustments Color manipulation parameters
+     * @param fontFamily Target CSS font family (default: "monospace")
      */
     renderFrame(
         charSetString: string,
         scale: number,
         bgColor: string,
-        adjustments: Adjustments
+        adjustments: Adjustments,
+        fontFamily: string = "monospace",
+        fontSize: number = 32,
     ): void {
-        if (!this.device || !this.context || !this.computePipeline || !this.renderPipeline || !this.sourceTexture) {
+        if (!this.device || !this.context || !this.computePipeline || !this.renderPipeline || !this.sourceTexture || !this.sampler) {
             return;
         }
 
         const device = this.device;
 
         // Font atlas generation for character subset
-        const fontAtlas = createFontAtlas(charSetString, "monospace", 32);
+        const fontAtlas = this.updateFontAtlas(charSetString, fontFamily, fontSize);
+        const atlasTexture = this.cachedAtlasTexture!;
 
         // Aspect ratio calculations
         const fontAspectRatio = fontAtlas.cellHeight / fontAtlas.cellWidth;
@@ -160,20 +221,6 @@ export class AsciiPipelineManager {
             canvas.width = asciiPixelWidth;
             canvas.height = asciiPixelHeight;
         }
-
-        // Upload font atlas texture
-        const atlasTexture = device.createTexture({
-            size: [fontAtlas.textureWidth, fontAtlas.textureHeight, 1],
-            format: "rgba8unorm",
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-        });
-        device.queue.copyExternalImageToTexture(
-            { source: fontAtlas.canvas },
-            { texture: atlasTexture },
-            [fontAtlas.textureWidth, fontAtlas.textureHeight]
-        );
-
-        const sampler = device.createSampler({ magFilter: "nearest", minFilter: "nearest" });
 
         // Clean up last cell buffer
         if (this.lastCellBuffer) {
@@ -217,7 +264,7 @@ export class AsciiPipelineManager {
             layout: this.computePipeline.getBindGroupLayout(0),
             entries: [
                 { binding: 0, resource: this.sourceTexture.createView() },
-                { binding: 1, resource: sampler },
+                { binding: 1, resource: this.sampler },
                 { binding: 2, resource: { buffer: computeBuffer } },
                 { binding: 3, resource: { buffer: lumBuffer } },
                 { binding: 4, resource: { buffer: cellStorageBuffer } },
@@ -251,7 +298,7 @@ export class AsciiPipelineManager {
             layout: this.renderPipeline.getBindGroupLayout(0),
             entries: [
                 { binding: 0, resource: atlasTexture.createView() },
-                { binding: 1, resource: sampler },
+                { binding: 1, resource: this.sampler },
                 { binding: 2, resource: { buffer: renderBuffer } },
                 { binding: 3, resource: { buffer: cellStorageBuffer } },
             ],
@@ -289,7 +336,6 @@ export class AsciiPipelineManager {
         device.queue.submit([commandEncoder.finish()]);
 
         // Clean up frame allocations to prevent VRAM memory leaks
-        atlasTexture.destroy();
         computeBuffer.destroy();
         lumBuffer.destroy();
         adjBuffer.destroy();
