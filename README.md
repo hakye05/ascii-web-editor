@@ -1,78 +1,44 @@
-# React + TypeScript + Vite
+# ASCII Web Editor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A real-time image-to-ASCII converter and image editor built with React + TypeScript + Vite with integration of WebGPU.
 
-Currently, two official plugins are available:
+By leveraging WebGPU compute and render shaders, this application processes ASCII editing and conversion at 60 FPS.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+* **Real-time WebGPU Pipeline:** Offloads image adjustments, character calculations, and grid rendering to the GPU via custom WGSL shaders.
+* **Live Image Editing:** Interactive control over custom character sets, brightness, contrast, saturation, hue rotation, gamma, scale, and background color.
+* **Multi-Format Export:**
+  * **PNG / JPG:** Direct high-resolution canvas bitmap capture.
+  * **TXT:** Non-colored raw ASCII representation of canvas.
+* **Font Atlas Generation:** Automatically rasterizes custom and pre-defined character sets into a GPU texture atlas.
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Rendering Pipeline
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+The core rendering engine is managed by `AsciiPipelineManager`, utilizing two WGSL shader for computing and rendering.
 
-## Expanding the ESLint configuration
+### 1. **Compute Shader (`asciiShaderWGSL`):**
+* Takes the uploaded image source texture and divides the screen into a grid of cells.
+* Performs 4x4 sub-pixel grid sampling for color averaging.
+* Applies color adjustments (`brightness`, `contrast`, `hue/saturation`, `gamma`) on individual grid cells.
+* Matches cell luminance ($0.2126R + 0.7152G + 0.0722B$) against the Font Atlas density values and outputs the result into a shared GPU storage buffer (`CellOutput`).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 2. **Render Shader (`asciiRenderWGSL`):**
+* Uses instanced quad rendering where each instance corresponds to an ASCII grid cell.
+* Samples character glyph masks from the cached Font Atlas texture.
+* Blends source colors, background color, and alpha masks directly onto canvas context.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Usage
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1. **Upload an Image:** Drag & drop or select an image to upload it directly to GPU VRAM.
+2. **Adjust Settings:** Tweak scale, contrast, brightness, gamma, or pick predefined character sets in the sidebar editor.
+3. **Export:** Choose your desired output format (`.png`, `.jpg`, or `.txt`) and click export.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Post-Processing Effects (Roadmap)
 
-```
+The state architecture (`useEditorState`) is equipped to support secondary WebGPU post-processing passes:
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+- [ ] **Bloom Pass:** Threshold-based luminance glow around light characters.
+- [ ] **Film Grain & Vignette:** Procedural noise and edge darkening shaders.
+- [ ] **CRT / Scanline Effect:** Retro CRT monitor distortion pass.
+- [ ] **Chromatic Aberration:** RGB color channel offset.
